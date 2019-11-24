@@ -379,7 +379,7 @@ void after_noun() {
   case OBJECT:
     match(OBJECT);
     after_object();
-  default:
+  default:	
     syntaxerror2(saved_lexeme, "<after noun>");
   }
 }
@@ -389,6 +389,7 @@ void after_noun() {
 // Done by: Justin Flores
 void after_object()
 {
+cout << "Processing <after object>..." << endl;	
   switch(next_token()){
   case WORD2:
     verb();
