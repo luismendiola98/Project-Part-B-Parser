@@ -17,7 +17,7 @@ using namespace std;
 //       (by|gy|hy|ky|my|ny|py|ry|ch|sh|ts)(a|e|E|i|I|o|u)| (by|gy|hy|ky|my|ny|py|ry|ch|sh|ts)(a|e|E|i|I|o|u)n)^+
 
 bool word(string s) {
-  
+
   int state = 0;
   int charpos = 0;
   // replace the following todo the word dfa  **
@@ -165,15 +165,17 @@ reservedwords[] = {
   {"shikashi", CONNECTOR},
   {"dakara", CONNECTOR}
 };
+
 // ------------ Scaner and Driver -----------------------
 
 ifstream fin;  // global stream for reading from the input file
 
 // Scanner processes only one word each time it is called
 // Gives back the token type and the word itself
-// ** Done by:
+// ** Done by: Leonardo Miranda
 string scanner(tokentype& tt, string& w)
 {
+  // tt is token_type 
   // ** Grab the next word from the file via fin
   // 1. If it is eofm, return right now.
   
@@ -274,14 +276,34 @@ void syntaxerror2(  ) {    }
 
 // ** Need the updated match and next_token with 2 global vars
 // saved_token and saved_lexeme
+// Global variables declared here:
+tokentype saved_token;// global buffer for the token the scanner returned
+bool token_available;// global flag indicating whether we have saved a token to eat up or not  
+string saved_lexeme;// saves the string returned from the scanner
 
-// Purpose: **
-// Done by: **
-token_type next_token(){}
+// Purpose: Looks ahead to see what token is next from the scanner.
+// Done by: Luis Mendiola and Justin Flores
+// switched token_type to tokentype
+tokentype next_token(){
+  if(!token_available)// if there is no saved token yet
+    {
+      scanner(saved_token, saved_lexeme);// call scanner to grab new token
+      token_available = true;// mark that there is a token saved
+    }
+  return saved_token;// return saved_token
+}
 
-// Purpose: **
-// Done by: **
-boolean match(tokentype expected) {}
+// Purpose: checks to see if there is a match 
+// and eats up the expected token
+// Done by: Luis Mendiola
+boolean match(tokentype expected) {
+  if(next_token() != expected){// mismatch has occurred
+    syntaxerror1(next_token(), expected);// generate syntax error
+  }else {// match has occurred
+    token_available = false;// eat up token
+    return true;// say there was a match 
+  }
+}
 
 // ----- RDP functions - one per non-term -------------------
 
@@ -289,10 +311,72 @@ boolean match(tokentype expected) {}
 // ** Be sure to put the corresponding grammar rule above each function
 // ** Be sure to put the name of the programmer above each function
 
-// Grammar: **
-// Done by: **
+// Grammar: <story> ::= <s> { <s> }
+// Done by: Luis Mendiola
 
+void story() {
+  cout << "Processing <story>..." << endl;
+  s();
+  while(true){ // loop for { <s> }
+    switch(next_token())
+      {
+      case CONNECTOR:
+      case WORD1:
+      case PRONOUN:// we have another <s>
+	S();
+	break;
+      default:
+	return;// end of <story>
+      }
+  }
+}
+// Grammar: <s> ::= [CONNECTOR] <noun> SUBJECT <after noun>
+// Done by: Luis Mendiola
+void s(){
+  cout << "Processing <s>..." << endl;
+  if(next_token() == "mata" || next_token() == "soshite" || next_token() == "shikashi" || next_token() == "dakara")// if next_token is a CONNECTOR
+    match(CONNECTOR);
 
+  noun();
+  match(SUBJECT);
+  after_subject();
+}
+// Grammar: <after subject> ::= <verb> <tense> PERIOD | <noun> <after noun>
+// Done by: Luis Mendiola
+void after_subject(){
+  cout << "Processing <after subject>..." << endl;
+  switch(next_token()){
+  case WORD2:
+    verb();
+    tense();
+    match(PERIOD);
+  case (WORD1 || PRONOUN):
+    noun();
+    after_noun();
+  default:
+    syntaxerror2(saved_lexeme, "<after subject>");
+  }
+}
+// Grammar: <after noun> ::= <be> PERIOD | DESTINATION <verb> <tense> PERIOD | OBJECT <after object>
+// Done by: Luis Mendiola
+void after_noun() {
+  cout << "Processing <after noun>..." << endl;
+  switch(next_token()){
+  case (IS || WAS):
+    be();
+    match(PERIOD);
+  case DESTINATION:
+    match(DESTINATION);
+    verb();
+    tense();
+    match(PERIOD);
+  case OBJECT:
+    match(OBJECT);
+    after_object();
+  default:
+    syntaxerror2(saved_lexeme, "<after noun>");
+  }
+}
 //----------- Driver ---------------------------
 
 // The new test driver to start the parser
@@ -304,6 +388,7 @@ int main()
   fin.open(filename.c_str());
 
   //** calls the <story> to start parsing
+
   //** closes the input file 
 
 }// end
